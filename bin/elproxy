@@ -1,0 +1,92 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Maintainer: The Void (@thevoidifnotnil)
+# Maintainer: Fathurrohman (@fathurrohman26)
+
+# Ensure PREFIX directory exists
+PREFIX="/data/data/com.termux/files/usr/opt/elproxy"
+
+if [ ! -d "$PREFIX" ]; then
+    echo "The directory $PREFIX does not exist. Please install elproxy package first."
+    exit 1
+fi
+
+PROXY_BIN="$PREFIX/bin/3proxy"
+PROXY_CONF="$PREFIX/conf/3proxy.cfg"
+
+TUNNEL_BIN="$PREFIX/bin/frpc"
+TUNNEL_CONF="$PREFIX/conf/frpc.toml"
+
+# Test if 3proxy binary exists
+if [ ! -f "$PROXY_BIN" ]; then
+    echo "3proxy binary not found at $PROXY_BIN. Please check your installation."
+    exit 1
+fi
+
+# Test if frpc binary exists
+if [ ! -f "$TUNNEL_BIN" ]; then
+    echo "frpc binary not found at $TUNNEL_BIN. Please check your installation."
+    exit 1
+fi
+
+# Usage:
+#   elproxy -s (start|stop|status|restart)
+
+start_service() {
+    echo "Starting 3proxy..."
+    "$PROXY_BIN" -c "$PROXY_CONF" &
+    PROXY_PID=$!
+    echo "3proxy started with PID $PROXY_PID"
+
+    echo "Starting frpc..."
+    "$TUNNEL_BIN" -c "$TUNNEL_CONF" &
+    TUNNEL_PID=$!
+    echo "frpc started with PID $TUNNEL_PID"
+}
+
+stop_service() {
+    echo "Stopping 3proxy..."
+    pkill -f "$PROXY_BIN"
+    echo "3proxy stopped."
+
+    echo "Stopping frpc..."
+    pkill -f "$TUNNEL_BIN"
+    echo "frpc stopped."
+}
+
+status_service() {
+    if pgrep -f "$PROXY_BIN" > /dev/null; then
+        echo "3proxy is running."
+    else
+        echo "3proxy is not running."
+    fi
+
+    if pgrep -f "$TUNNEL_BIN" > /dev/null; then
+        echo "frpc is running."
+    else
+        echo "frpc is not running."
+    fi
+}
+
+restart_service() {
+    stop_service
+    start_service
+}
+
+case "$1" in
+    start)
+        start_service
+        ;;
+    stop)
+        stop_service
+        ;;
+    status)
+        status_service
+        ;;
+    restart)
+        restart_service
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
