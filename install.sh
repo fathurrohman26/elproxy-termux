@@ -86,10 +86,8 @@ detect_architecture() {
 }
 
 get_package_manager() {
-    if command -v apt >/dev/null 2>&1; then
-        echo "apt"
-    elif command -v pkg >/dev/null 2>&1; then
-        echo "pkg"
+    if command -v apt-get >/dev/null 2>&1; then
+        echo "apt-get"
     else
         log_error "No compatible package manager found (apt or pkg)"
         return 1
@@ -146,7 +144,7 @@ install_required_packages() {
     # Base packages
     local base_packages=("git" "curl" "uuid-utils")
     
-    if ! $pkg_manager install -y "${base_packages[@]}"; then
+    if ! $pkg_manager install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${base_packages[@]}"; then
         log_error "Failed to install required packages"
         return 1
     fi
@@ -424,12 +422,12 @@ main() {
     
     # Update and upgrade packages
     log_step "Updating system packages..."
-    if ! $pkg_manager update -y; then
+    if ! $pkg_manager update -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"; then
         log_error "Failed to update packages"
         exit 1
     fi
     
-    if ! $pkg_manager upgrade -y; then
+    if ! $pkg_manager upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"; then
         log_warning "Package upgrade had some issues, but continuing..."
     else
         log_success "Packages updated successfully"
