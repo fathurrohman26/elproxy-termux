@@ -1,4 +1,4 @@
-serverAddr = "connect.elproxy.cloud"
+serverAddr = "ec2-13-212-186-72.ap-southeast-1.compute.amazonaws.com"
 serverPort = 7000
 
 [[proxies]]
