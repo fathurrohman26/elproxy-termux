@@ -142,6 +142,9 @@ install_required_packages() {
     local pkg_manager="$1"
     
     log_step "Installing required packages..."
+
+    # Pre-configure dpkg to use the package maintainer's version
+    export DEBIAN_FRONTEND=noninteractive
     
     # Base packages
     local base_packages=("git" "curl" "uuid-utils")
