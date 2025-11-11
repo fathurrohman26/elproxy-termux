@@ -18,6 +18,7 @@ readonly COLOR_RESET='\033[0m'
 
 # Constants
 readonly PREFIX="/data/data/com.termux/files/usr/opt/elproxy"
+readonly TB_PREFIX="$HOME/.termux/boot"
 readonly TMPDIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
 readonly REPO_URL="https://github.com/fathurrohman26/elproxy-termux.git"
 readonly CLONE_DIR="$TMPDIR/elproxy"
@@ -129,8 +130,13 @@ cleanup() {
     log_step "Performing cleanup..."
     if [[ -d "$CLONE_DIR" ]]; then
         rm -rf "$CLONE_DIR"
-        log_success "Temporary files cleaned up"
     fi
+
+    if [[ -f "$TB_PREFIX/start-elproxy" ]]; then
+        rm -rf "$TB_PREFIX/start-elproxy"
+    fi
+
+    log_success "Temporary files cleaned up"
 }
 
 trap cleanup EXIT
@@ -142,6 +148,10 @@ main() {
     local device_id
     
     log_step "Starting ElProxy installation..."
+     
+    # Detect package manager
+    pkg_manager=$(get_package_manager) || exit 1
+    log_info "Using package manager: $pkg_manager"
 
     # Update and upgrade packages
     log_step "Updating system packages..."
@@ -169,10 +179,6 @@ main() {
     check_command "git" || exit 1
     check_command "uuidgen" || exit 1
     check_internet_connection || exit 1
-    
-    # Detect package manager
-    pkg_manager=$(get_package_manager) || exit 1
-    log_info "Using package manager: $pkg_manager"
     
     # Detect architecture
     arch=$(detect_architecture) || exit 1
@@ -282,10 +288,6 @@ main() {
         exit 1
     fi
     log_success "Permissions set"
-
-    # Termux Boot support
-    TB_PREFIX=$HOME/boot
-    mkdir -p $TB_PREFIX
 
     log_step "Creating boot-auto-start script..."
 
