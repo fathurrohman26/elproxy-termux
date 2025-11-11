@@ -5,6 +5,9 @@
 
 set -e  # Exit on any error
 
+# Prevent sleeping
+termux-wake-lock
+
 # Color definitions
 readonly COLOR_RED='\033[0;31m'
 readonly COLOR_GREEN='\033[0;32m'
@@ -277,6 +280,19 @@ main() {
         exit 1
     fi
     log_success "Permissions set"
+
+    # Termux Boot support
+    TB_PREFIX=$HOME/boot
+    mkdir -p $TB_PREFIX
+
+    log_step "Creating boot-auto-start script..."
+
+    if ! cp scripts/start-elproxy "$TB_PREFIX"; then
+        log_error "Failed to copy boot-auto-start script: scripts/start-elproxy"
+        exit 1
+    fi
+
+    log_success "Script boot-auto-start created at $TB_PREFIX/start-elproxy"
     
     # Validate installation
     log_step "Validating installation..."
@@ -285,6 +301,7 @@ main() {
         "$PREFIX/bin/frpc"
         "$PREFIX/conf/3proxy.conf"
         "$PREFIX/conf/frpc.toml"
+        "$TB_PREFIX/start-elproxy"
     )
     
     if ! validate_files "${required_files[@]}"; then

@@ -166,7 +166,7 @@ stop_proxy() {
         local pid=$(get_proxy_pid)
         log_info "Stopping 3proxy (PID: $pid)..."
         if pkill -f "$PROXY_BIN"; then
-            sleep 1
+            sleep 3
             if is_proxy_running; then
                 log_warning "3proxy did not stop gracefully, forcing termination..."
                 pkill -9 -f "$PROXY_BIN"
@@ -188,7 +188,7 @@ stop_tunnel() {
         local pid=$(get_tunnel_pid)
         log_info "Stopping frpc (PID: $pid)..."
         if pkill -f "$TUNNEL_BIN"; then
-            sleep 1
+            sleep 3
             if is_tunnel_running; then
                 log_warning "frpc did not stop gracefully, forcing termination..."
                 pkill -9 -f "$TUNNEL_BIN"

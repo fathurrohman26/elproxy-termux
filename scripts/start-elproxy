@@ -1,0 +1,7 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# Maintainer: The Void (@thevoidifnotnil)
+# Maintainer: Fathurrohman (@fathurrohman26)
+# Termux Boot Auto Start
+
+termux-wake-lock
+elproxy start
