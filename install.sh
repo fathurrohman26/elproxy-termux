@@ -495,7 +495,7 @@ main() {
     log_info "Usage:"
     log_info "  elproxy start    - Start all services"
     log_info "  elproxy stop     - Stop all services"
-    log_info "  log_info "  elproxy status   - Show service status"
+    log_info "  elproxy status   - Show service status"
     log_info "  elproxy restart  - Restart all services"
     echo
     log_info "Next steps:"
