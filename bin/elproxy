@@ -5,104 +5,374 @@
 # Ensure PREFIX directory exists
 PREFIX="/data/data/com.termux/files/usr/opt/elproxy"
 
-if [ ! -d "$PREFIX" ]; then
-    echo "The directory $PREFIX does not exist. Please install elproxy package first."
-    exit 1
-fi
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Validation functions
+validate_installation() {
+    if [ ! -d "$PREFIX" ]; then
+        log_error "The directory $PREFIX does not exist. Please install elproxy package first."
+        exit 1
+    fi
+
+    # Test if 3proxy binary exists
+    if [ ! -f "$PROXY_BIN" ]; then
+        log_error "3proxy binary not found at $PROXY_BIN. Please check your installation."
+        exit 1
+    fi
+
+    # Test if 3proxy config exists
+    if [ ! -f "$PROXY_CONF" ]; then
+        log_warning "3proxy config not found at $PROXY_CONF"
+    fi
+
+    # Test if frpc binary exists
+    if [ ! -f "$TUNNEL_BIN" ]; then
+        log_error "frpc binary not found at $TUNNEL_BIN. Please check your installation."
+        exit 1
+    fi
+
+    # Test if frpc config exists
+    if [ ! -f "$TUNNEL_CONF" ]; then
+        log_warning "frpc config not found at $TUNNEL_CONF"
+    fi
+
+    # Check if binaries are executable
+    if [ ! -x "$PROXY_BIN" ]; then
+        log_error "3proxy binary is not executable: $PROXY_BIN"
+        exit 1
+    fi
+
+    if [ ! -x "$TUNNEL_BIN" ]; then
+        log_error "frpc binary is not executable: $TUNNEL_BIN"
+        exit 1
+    fi
+}
+
+# Service paths
 PROXY_BIN="$PREFIX/bin/3proxy"
 PROXY_CONF="$PREFIX/conf/3proxy.conf"
+PROXY_LOG="$PREFIX/logs/3proxy.log"
 
 TUNNEL_BIN="$PREFIX/bin/frpc"
 TUNNEL_CONF="$PREFIX/conf/frpc.toml"
+TUNNEL_LOG="$PREFIX/logs/frpc.log"
 
-# Test if 3proxy binary exists
-if [ ! -f "$PROXY_BIN" ]; then
-    echo "3proxy binary not found at $PROXY_BIN. Please check your installation."
-    exit 1
-fi
+# Create logs directory if it doesn't exist
+mkdir -p "$PREFIX/logs"
 
-# Test if frpc binary exists
-if [ ! -f "$TUNNEL_BIN" ]; then
-    echo "frpc binary not found at $TUNNEL_BIN. Please check your installation."
-    exit 1
-fi
+# Service management functions
+is_proxy_running() {
+    pgrep -f "$PROXY_BIN" > /dev/null 2>&1
+}
 
-# Usage:
-#   elproxy -s (start|stop|status|restart)
+is_tunnel_running() {
+    pgrep -f "$TUNNEL_BIN" > /dev/null 2>&1
+}
 
-start_service() {
-    if pgrep -f "$PROXY_BIN" > /dev/null; then
-        echo "Starting 3proxy..."
-        "$PROXY_BIN" -c "$PROXY_CONF" &
-        PROXY_PID=$!
-        echo "3proxy started with PID $PROXY_PID"
-    else 
-        echo "3proxy already started!"
+get_proxy_pid() {
+    pgrep -f "$PROXY_BIN" 2>/dev/null
+}
+
+get_tunnel_pid() {
+    pgrep -f "$TUNNEL_BIN" 2>/dev/null
+}
+
+start_proxy() {
+    if is_proxy_running; then
+        log_warning "3proxy is already running (PID: $(get_proxy_pid))"
+        return 0
     fi
 
-    if pgrep -f "$TUNNEL_BIN" > /dev/null; then
-        echo "Starting frpc..."
-        "$TUNNEL_BIN" -c "$TUNNEL_CONF" &
-        TUNNEL_PID=$!
-        echo "frpc started with PID $TUNNEL_PID"
+    log_info "Starting 3proxy..."
+    
+    # Check if config file exists
+    if [ ! -f "$PROXY_CONF" ]; then
+        log_error "3proxy config file not found: $PROXY_CONF"
+        return 1
+    fi
+
+    # Start 3proxy with logging
+    if "$PROXY_BIN" -c "$PROXY_CONF" >> "$PROXY_LOG" 2>&1 & then
+        local pid=$!
+        sleep 2
+        if is_proxy_running; then
+            log_success "3proxy started successfully (PID: $(get_proxy_pid))"
+            return 0
+        else
+            log_error "3proxy failed to start. Check logs: $PROXY_LOG"
+            return 1
+        fi
     else
-        echo "frpc already started!"
+        log_error "Failed to start 3proxy process"
+        return 1
+    fi
+}
+
+start_tunnel() {
+    if is_tunnel_running; then
+        log_warning "frpc is already running (PID: $(get_tunnel_pid))"
+        return 0
+    fi
+
+    log_info "Starting frpc..."
+    
+    # Check if config file exists
+    if [ ! -f "$TUNNEL_CONF" ]; then
+        log_error "frpc config file not found: $TUNNEL_CONF"
+        return 1
+    fi
+
+    # Start frpc with logging
+    if "$TUNNEL_BIN" -c "$TUNNEL_CONF" >> "$TUNNEL_LOG" 2>&1 & then
+        local pid=$!
+        sleep 2
+        if is_tunnel_running; then
+            log_success "frpc started successfully (PID: $(get_tunnel_pid))"
+            return 0
+        else
+            log_error "frpc failed to start. Check logs: $TUNNEL_LOG"
+            return 1
+        fi
+    else
+        log_error "Failed to start frpc process"
+        return 1
+    fi
+}
+
+stop_proxy() {
+    if is_proxy_running; then
+        local pid=$(get_proxy_pid)
+        log_info "Stopping 3proxy (PID: $pid)..."
+        if pkill -f "$PROXY_BIN"; then
+            sleep 1
+            if is_proxy_running; then
+                log_warning "3proxy did not stop gracefully, forcing termination..."
+                pkill -9 -f "$PROXY_BIN"
+            fi
+            log_success "3proxy stopped"
+            return 0
+        else
+            log_error "Failed to stop 3proxy"
+            return 1
+        fi
+    else
+        log_warning "3proxy is not running"
+        return 0
+    fi
+}
+
+stop_tunnel() {
+    if is_tunnel_running; then
+        local pid=$(get_tunnel_pid)
+        log_info "Stopping frpc (PID: $pid)..."
+        if pkill -f "$TUNNEL_BIN"; then
+            sleep 1
+            if is_tunnel_running; then
+                log_warning "frpc did not stop gracefully, forcing termination..."
+                pkill -9 -f "$TUNNEL_BIN"
+            fi
+            log_success "frpc stopped"
+            return 0
+        else
+            log_error "Failed to stop frpc"
+            return 1
+        fi
+    else
+        log_warning "frpc is not running"
+        return 0
+    fi
+}
+
+show_status() {
+    echo -e "\n${BLUE}=== Service Status ===${NC}"
+    
+    if is_proxy_running; then
+        echo -e "3proxy: ${GREEN}RUNNING${NC} (PID: $(get_proxy_pid))"
+    else
+        echo -e "3proxy: ${RED}STOPPED${NC}"
+    fi
+    
+    if is_tunnel_running; then
+        echo -e "frpc:   ${GREEN}RUNNING${NC} (PID: $(get_tunnel_pid))"
+    else
+        echo -e "frpc:   ${RED}STOPPED${NC}"
+    fi
+    
+    # Show recent log entries if available
+    if [ -f "$PROXY_LOG" ] && [ -s "$PROXY_LOG" ]; then
+        echo -e "\n${BLUE}=== Last 3 lines from 3proxy.log ===${NC}"
+        tail -3 "$PROXY_LOG"
+    fi
+    
+    if [ -f "$TUNNEL_LOG" ] && [ -s "$TUNNEL_LOG" ]; then
+        echo -e "\n${BLUE}=== Last 3 lines from frpc.log ===${NC}"
+        tail -3 "$TUNNEL_LOG"
+    fi
+    echo ""
+}
+
+start_service() {
+    log_info "Starting elproxy services..."
+    
+    local proxy_started=0
+    local tunnel_started=0
+    
+    if start_proxy; then
+        proxy_started=1
+    fi
+    
+    if start_tunnel; then
+        tunnel_started=1
+    fi
+    
+    if [ $proxy_started -eq 1 ] && [ $tunnel_started -eq 1 ]; then
+        log_success "All services started successfully"
+        return 0
+    else
+        log_warning "Some services may not have started properly"
+        return 1
     fi
 }
 
 stop_service() {
-     if pgrep -f "$PROXY_BIN" > /dev/null; then
-        echo "Stopping 3proxy..."
-        pkill -f "$PROXY_BIN"
-        echo "3proxy stopped."
-    else 
-        echo "3proxy not started!"
+    log_info "Stopping elproxy services..."
+    
+    local proxy_stopped=0
+    local tunnel_stopped=0
+    
+    if stop_tunnel; then
+        tunnel_stopped=1
     fi
-
-    if pgrep -f "$TUNNEL_BIN" > /dev/null; then
-        echo "Stopping frpc..."
-        pkill -f "$TUNNEL_BIN"
-        echo "frpc stopped."
-    else
-        echo "frpc not started!"
+    
+    if stop_proxy; then
+        proxy_stopped=1
     fi
-}
-
-status_service() {
-    if pgrep -f "$PROXY_BIN" > /dev/null; then
-        echo "3proxy is running."
+    
+    if [ $proxy_stopped -eq 1 ] && [ $tunnel_stopped -eq 1 ]; then
+        log_success "All services stopped successfully"
+        return 0
     else
-        echo "3proxy is not running."
-    fi
-
-    if pgrep -f "$TUNNEL_BIN" > /dev/null; then
-        echo "frpc is running."
-    else
-        echo "frpc is not running."
+        log_warning "Some services may not have stopped properly"
+        return 1
     fi
 }
 
 restart_service() {
+    log_info "Restarting elproxy services..."
     stop_service
+    sleep 2
     start_service
 }
 
-case "$1" in
-    start)
-        start_service
-        ;;
-    stop)
-        stop_service
-        ;;
-    status)
-        status_service
-        ;;
-    restart)
-        restart_service
-        ;;
-    *)
-        echo "Usage: $0 {start|stop|status|restart}"
-        exit 1
-        ;;
-esac
+show_logs() {
+    local service="$1"
+    local lines="${2:-10}"
+    
+    case "$service" in
+        proxy|3proxy)
+            if [ -f "$PROXY_LOG" ]; then
+                echo -e "\n${BLUE}=== Last $lines lines from 3proxy.log ===${NC}"
+                tail -n "$lines" "$PROXY_LOG"
+            else
+                log_error "3proxy log file not found: $PROXY_LOG"
+            fi
+            ;;
+        tunnel|frpc)
+            if [ -f "$TUNNEL_LOG" ]; then
+                echo -e "\n${BLUE}=== Last $lines lines from frpc.log ===${NC}"
+                tail -n "$lines" "$TUNNEL_LOG"
+            else
+                log_error "frpc log file not found: $TUNNEL_LOG"
+            fi
+            ;;
+        all)
+            show_logs "proxy" "$lines"
+            show_logs "tunnel" "$lines"
+            ;;
+        *)
+            log_error "Invalid service: $service. Use 'proxy', 'tunnel', or 'all'"
+            ;;
+    esac
+}
+
+show_usage() {
+    echo -e "${BLUE}ElProxy Service Manager${NC}"
+    echo ""
+    echo "Usage: $0 {start|stop|status|restart|logs|help} [service]"
+    echo ""
+    echo "Commands:"
+    echo "  start     - Start all services"
+    echo "  stop      - Stop all services"
+    echo "  status    - Show service status and recent logs"
+    echo "  restart   - Restart all services"
+    echo "  logs      - Show logs (usage: $0 logs {proxy|tunnel|all} [lines])"
+    echo "  help      - Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0 start"
+    echo "  $0 status"
+    echo "  $0 logs proxy 20"
+    echo "  $0 logs all"
+}
+
+# Main script execution
+main() {
+    # Validate installation first
+    validate_installation
+    
+    case "$1" in
+        start)
+            start_service
+            ;;
+        stop)
+            stop_service
+            ;;
+        status)
+            show_status
+            ;;
+        restart)
+            restart_service
+            ;;
+        logs)
+            show_logs "$2" "$3"
+            ;;
+        help|--help|-h)
+            show_usage
+            ;;
+        *)
+            if [ -z "$1" ]; then
+                show_status
+            else
+                log_error "Unknown command: $1"
+                echo ""
+                show_usage
+                exit 1
+            fi
+            ;;
+    esac
+}
+
+# Run main function with all arguments
+main "$@"
