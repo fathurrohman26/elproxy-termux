@@ -13,14 +13,25 @@ $pkg_manager update -y && $pkg_manager upgrade -y
 echo -e "${color_green}Packages updated and upgraded successfully.${color_reset}"
 
 echo -e "${color_green}Installing required packages...${color_reset}"
-$pkg_manager install uuid-utils -y
+$pkg_manager install uuid-utils git -y
 
 # Clone the source code repository
 
 echo -e "${color_green}Cloning the source code repository...${color_reset}"
 
-rm -rf /tmp/elproxy
-git clone https://github.com/fathurrohman26/elproxy.git /tmp/elproxy
+# Ensure tmp directory exists and TMPDIR is set
+if [ -z "$TMPDIR" ]; then
+    export TMPDIR="/data/data/com.termux/files/usr/tmp"
+fi
+
+mkdir -p "$TMPDIR"
+if [ $? -ne 0 ]; then
+    echo -e "${color_yellow}Failed to create TMPDIR directory.${color_reset}"
+    exit 1
+fi
+
+rm -rf $TMPDIR/elproxy
+git clone https://github.com/fathurrohman26/elproxy.git $TMPDIR/elproxy
 if [ $? -ne 0 ]; then
     echo -e "${color_yellow}Failed to clone repository. Please check your internet connection and try again.${color_reset}"
     exit 1
@@ -28,7 +39,7 @@ fi
 echo -e "${color_green}Repository cloned successfully.${color_reset}"
 
 # Navigate to the cloned directory
-cd /tmp/elproxy || { echo -e "${color_yellow}Failed to navigate to the cloned directory.${color_reset}"; exit 1; }
+cd $TMPDIR/elproxy || { echo -e "${color_yellow}Failed to navigate to the cloned directory.${color_reset}"; exit 1; }
 
 # Ensure PREFIX directory exists
 PREFIX="/data/data/com.termux/files/usr/opt/elproxy"
@@ -106,5 +117,5 @@ echo -e "${color_green}Elproxy script wrapper created successfully.${color_reset
 
 # Cleanup
 echo -e "${color_green}Cleaning up...${color_reset}"
-rm -rf /tmp/elproxy
+rm -rf $TMPDIR/elproxy
 echo -e "${color_green}Installation completed successfully! You can now use elproxy command.${color_reset}"
