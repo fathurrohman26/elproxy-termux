@@ -144,7 +144,7 @@ install_required_packages() {
     log_step "Installing required packages..."
     
     # Base packages
-    local base_packages=("git" "curl", "uuid-utils")
+    local base_packages=("git" "curl" "uuid-utils")
     
     if ! $pkg_manager install -y "${base_packages[@]}"; then
         log_error "Failed to install required packages"
