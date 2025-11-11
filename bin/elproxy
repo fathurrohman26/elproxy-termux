@@ -114,7 +114,7 @@ start_proxy() {
     fi
 
     # Start 3proxy with logging
-    if "$PROXY_BIN" -c "$PROXY_CONF" >> "$PROXY_LOG" 2>&1 & then
+    if "$PROXY_BIN" "$PROXY_CONF" >> "$PROXY_LOG" 2>&1 & then
         local pid=$!
         sleep 2
         if is_proxy_running; then
