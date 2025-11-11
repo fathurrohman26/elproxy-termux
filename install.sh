@@ -282,17 +282,32 @@ main() {
     log_success "Device ID configured"
 
     log_step "Creating boot-auto-start script..."
+
+    local boot_script_src="scripts/start-elproxy"
+    local boot_script_dst="$TB_PREFIX/start-elproxy"
+
+    if [[ ! -d "$TB_PREFIX" ]]; then
+        log_warning "Looks like boot directory not a valid directory, removing...."
+        rm -rf "$TB_PREFIX"
+    fi
+
     mkdir -p $TB_PREFIX
-    if ! cp scripts/start-elproxy "$TB_PREFIX"; then
-        log_error "Failed to copy boot-auto-start script: scripts/start-elproxy"
+
+    if ! validate_files "$boot_script_src"; then
+        log_error "Required configuration files not found"
         exit 1
     fi
 
-    log_success "Script boot-auto-start created at $TB_PREFIX/start-elproxy"
+    if ! cp $boot_script_src "$boot_script_dst"; then
+        log_error "Failed to copy boot-auto-start script: $boot_script_src"
+        exit 1
+    fi
+
+    log_success "Script boot-auto-start created at $boot_script_dst"
     
     # Set executable permissions
     log_step "Setting executable permissions..."
-    if ! chmod +x "$PREFIX/bin/3proxy" "$PREFIX/bin/frpc" "$TB_PREFIX/start-elproxy"; then
+    if ! chmod +x "$PREFIX/bin/3proxy" "$PREFIX/bin/frpc" "$boot_script_dst"; then
         log_error "Failed to set executable permissions"
         exit 1
     fi
