@@ -142,20 +142,7 @@ main() {
     local device_id
     
     log_step "Starting ElProxy installation..."
-    
-    # Check prerequisites
-    log_step "Checking prerequisites..."
-    check_command "git" || exit 1
-    check_internet_connection || exit 1
-    
-    # Detect package manager
-    pkg_manager=$(get_package_manager) || exit 1
-    log_info "Using package manager: $pkg_manager"
-    
-    # Detect architecture
-    arch=$(detect_architecture) || exit 1
-    log_info "Detected architecture: $arch"
-    
+
     # Update and upgrade packages
     log_step "Updating system packages..."
     if ! $pkg_manager update -y; then
@@ -167,7 +154,8 @@ main() {
         log_warning "Package upgrade had some issues, but continuing..."
     fi
     log_success "Packages updated successfully"
-    
+
+       
     # Install required packages
     log_step "Installing required packages..."
     if ! $pkg_manager install -y uuid-utils git; then
@@ -175,6 +163,20 @@ main() {
         exit 1
     fi
     log_success "Required packages installed"
+    
+    # Check prerequisites
+    log_step "Checking prerequisites..."
+    check_command "git" || exit 1
+    check_command "uuidgen" || exit 1
+    check_internet_connection || exit 1
+    
+    # Detect package manager
+    pkg_manager=$(get_package_manager) || exit 1
+    log_info "Using package manager: $pkg_manager"
+    
+    # Detect architecture
+    arch=$(detect_architecture) || exit 1
+    log_info "Detected architecture: $arch"
     
     # Prepare temporary directory
     log_step "Preparing temporary directory..."
