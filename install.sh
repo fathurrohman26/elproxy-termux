@@ -43,6 +43,7 @@ cd $TMPDIR/elproxy || { echo -e "${color_yellow}Failed to navigate to the cloned
 
 # Ensure PREFIX directory exists
 PREFIX="/data/data/com.termux/files/usr/opt/elproxy"
+rm -rf $PREFIX
 mkdir -p "$PREFIX"
 if [ $? -ne 0 ]; then
     echo -e "${color_yellow}Failed to create PREFIX directory.${color_reset}"
