@@ -142,8 +142,6 @@ install_required_packages() {
     local pkg_manager="$1"
     
     log_step "Installing required packages..."
-
-    $pkg_manager install -y openssl
     
     # Base packages
     local base_packages=("git" "curl" "uuid-utils")
