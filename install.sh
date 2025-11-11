@@ -12,6 +12,9 @@ command -v apt >/dev/null 2>&1 && pkg_manager="apt" || pkg_manager="pkg"
 $pkg_manager update -y && $pkg_manager upgrade -y
 echo -e "${color_green}Packages updated and upgraded successfully.${color_reset}"
 
+echo -e "${color_green}Installing required packages...${color_reset}"
+$pkg_manager install uuid-utils -y
+
 # Clone the source code repository
 
 echo -e "${color_green}Cloning the source code repository...${color_reset}"
@@ -66,6 +69,10 @@ fi
 
 cp "conf/3proxy.conf" "$PREFIX/conf/3proxy.conf"
 cp "conf/frpc.toml" "$PREFIX/conf/frpc.toml"
+
+# Setup Device ID
+DEVICE_ID=$(uuidgen)
+sed -i "s/@@DEVICE_ID@@/$DEVICE_ID/g" "$PREFIX/conf/frpc.toml"
 
 # Ensure files were copied successfully
 if [ test ! -f "$PREFIX/bin/3proxy" ] || [ test ! -f "$PREFIX/bin/frpc" ] || [ test ! -f "$PREFIX/conf/3proxy.conf" ] || [ test ! -f "$PREFIX/conf/frpc.toml" ]; then

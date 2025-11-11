@@ -11,7 +11,7 @@ if [ ! -d "$PREFIX" ]; then
 fi
 
 PROXY_BIN="$PREFIX/bin/3proxy"
-PROXY_CONF="$PREFIX/conf/3proxy.cfg"
+PROXY_CONF="$PREFIX/conf/3proxy.conf"
 
 TUNNEL_BIN="$PREFIX/bin/frpc"
 TUNNEL_CONF="$PREFIX/conf/frpc.toml"

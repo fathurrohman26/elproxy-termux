@@ -1,0 +1,12 @@
+serverAddr = "connect.elproxy.cloud"
+serverPort = 7000
+
+[[proxies]]
+name = "@@DEVICE_ID@@_http_proxy"
+type = "tcp"
+localPort = 10080
+
+[[proxies]]
+name = "@@DEVICE_ID@@_socks_proxy"
+type = "tcp"
+localPort = 1080
