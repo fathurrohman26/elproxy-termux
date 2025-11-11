@@ -143,8 +143,7 @@ install_required_packages() {
     
     log_step "Installing required packages..."
 
-    # Pre-configure dpkg to use the package maintainer's version
-    export DEBIAN_FRONTEND=noninteractive
+    $pkg_manager install -y openssl
     
     # Base packages
     local base_packages=("git" "curl" "uuid-utils")
