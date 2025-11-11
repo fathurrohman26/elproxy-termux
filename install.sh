@@ -280,23 +280,23 @@ main() {
     fi
     log_info "Device ID generated: $device_id"
     log_success "Device ID configured"
-    
-    # Set executable permissions
-    log_step "Setting executable permissions..."
-    if ! chmod +x "$PREFIX/bin/3proxy" "$PREFIX/bin/frpc"; then
-        log_error "Failed to set executable permissions"
-        exit 1
-    fi
-    log_success "Permissions set"
 
     log_step "Creating boot-auto-start script..."
-
+    mkdir -p $TB_PREFIX
     if ! cp scripts/start-elproxy "$TB_PREFIX"; then
         log_error "Failed to copy boot-auto-start script: scripts/start-elproxy"
         exit 1
     fi
 
     log_success "Script boot-auto-start created at $TB_PREFIX/start-elproxy"
+    
+    # Set executable permissions
+    log_step "Setting executable permissions..."
+    if ! chmod +x "$PREFIX/bin/3proxy" "$PREFIX/bin/frpc" "$TB_PREFIX/start-elproxy"; then
+        log_error "Failed to set executable permissions"
+        exit 1
+    fi
+    log_success "Permissions set"
     
     # Validate installation
     log_step "Validating installation..."
