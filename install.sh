@@ -142,7 +142,7 @@ install_required_packages() {
     log_step "Installing required packages..."
     
     # Base packages
-    local base_packages=("git" "curl" "uuid-utils")
+    local base_packages=("git" "curl" "uuid-utils" "util-linux" "libandroid-posix-semaphore")
     
     if ! $pkg_manager install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "${base_packages[@]}"; then
         log_error "Failed to install required packages"
