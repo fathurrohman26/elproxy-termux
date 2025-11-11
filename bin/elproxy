@@ -32,25 +32,41 @@ fi
 #   elproxy -s (start|stop|status|restart)
 
 start_service() {
-    echo "Starting 3proxy..."
-    "$PROXY_BIN" -c "$PROXY_CONF" &
-    PROXY_PID=$!
-    echo "3proxy started with PID $PROXY_PID"
+    if pgrep -f "$PROXY_BIN" > /dev/null; then
+        echo "Starting 3proxy..."
+        "$PROXY_BIN" -c "$PROXY_CONF" &
+        PROXY_PID=$!
+        echo "3proxy started with PID $PROXY_PID"
+    else 
+        echo "3proxy already started!"
+    fi
 
-    echo "Starting frpc..."
-    "$TUNNEL_BIN" -c "$TUNNEL_CONF" &
-    TUNNEL_PID=$!
-    echo "frpc started with PID $TUNNEL_PID"
+    if pgrep -f "$TUNNEL_BIN" > /dev/null; then
+        echo "Starting frpc..."
+        "$TUNNEL_BIN" -c "$TUNNEL_CONF" &
+        TUNNEL_PID=$!
+        echo "frpc started with PID $TUNNEL_PID"
+    else
+        echo "frpc already started!"
+    fi
 }
 
 stop_service() {
-    echo "Stopping 3proxy..."
-    pkill -f "$PROXY_BIN"
-    echo "3proxy stopped."
+     if pgrep -f "$PROXY_BIN" > /dev/null; then
+        echo "Stopping 3proxy..."
+        pkill -f "$PROXY_BIN"
+        echo "3proxy stopped."
+    else 
+        echo "3proxy not started!"
+    fi
 
-    echo "Stopping frpc..."
-    pkill -f "$TUNNEL_BIN"
-    echo "frpc stopped."
+    if pgrep -f "$TUNNEL_BIN" > /dev/null; then
+        echo "Stopping frpc..."
+        pkill -f "$TUNNEL_BIN"
+        echo "frpc stopped."
+    else
+        echo "frpc not started!"
+    fi
 }
 
 status_service() {
