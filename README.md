@@ -15,3 +15,9 @@ curl -fsSL https://raw.githubusercontent.com/fathurrohman26/elproxy-termux/refs/
 ```bash
 elproxy start|stop|status|restart
 ```
+
+## Troubleshooting
+- Update error (Mirror connections errors)
+```bash
+termux-change-repo
+```
