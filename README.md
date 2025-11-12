@@ -7,7 +7,7 @@
 - Download Termux Boot [Download Termux 0.8.1 F-Droid](https://f-droid.org/repo/com.termux.boot_1000.apk)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fathurrohman26/elproxy-termux/refs/heads/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fathurrohman26/elproxy-termux/refs/heads/main/install.sh | bash && elproxy start
 ```
 
 ## Usage
